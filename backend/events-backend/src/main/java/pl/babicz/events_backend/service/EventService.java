@@ -10,6 +10,14 @@ import pl.babicz.events_backend.model.Category;
 import pl.babicz.events_backend.model.Event;
 import pl.babicz.events_backend.model.EventStatus;
 import pl.babicz.events_backend.repository.EventRepository;
+import pl.babicz.events_backend.dto.EventFilter;
+import pl.babicz.events_backend.repository.EventSpecifications;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import org.springframework.data.jpa.domain.Specification;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -17,11 +25,18 @@ public class EventService {
 
     private final EventRepository eventRepository;
 
-    // Metoda zwraca tylko zaakceptowane wydarzenia.
+    // Metoda zwraca tylko Event po ID.
     @Transactional(readOnly = true)
-    public Page<EventDto> getApprovedEvents(Pageable pageable) {
-        return eventRepository.findByStatus(EventStatus.APPROVED, pageable)
-                .map(this::toDto);
+    public Page<EventDto> search(EventFilter filter, Pageable pageable) {
+        Specification<Event> spec = Specification.allOf(List.of(
+                EventSpecifications.hasStatus(EventStatus.APPROVED),
+                EventSpecifications.inVoivodeship(filter.voivodeshipId()),
+                EventSpecifications.inCategory(filter.categoryId()),
+                EventSpecifications.titleContains(filter.query()),
+                EventSpecifications.startsFrom(filter.from()),
+                EventSpecifications.startsUntil(filter.to())
+        ));
+        return eventRepository.findAll(spec, pageable).map(this::toDto);
     }
 
     private EventDto toDto(Event e) {

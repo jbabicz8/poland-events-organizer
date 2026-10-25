@@ -8,7 +8,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.babicz.events_backend.dto.EventDto;
+import pl.babicz.events_backend.dto.EventFilter;
 import pl.babicz.events_backend.service.EventService;
+
+import org.springframework.web.bind.annotation.PathVariable;
 
 @RestController
 @RequestMapping("/api/events")
@@ -19,7 +22,9 @@ public class EventController {
 
     @GetMapping
     public PagedModel<EventDto> list(
+            EventFilter filter,
             @PageableDefault(size = 20, sort = "startDate") Pageable pageable) {
-        return new PagedModel<>(eventService.getApprovedEvents(pageable));
+        return new PagedModel<>(eventService.search(filter, pageable));
     }
+
 }
