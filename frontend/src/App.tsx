@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import PolandMap from './PolandMap'
+import AuthForm from './AuthForm'
+import { loadUser, saveUser, type User } from './auth'
 
 type EventItem = {
     id: number
@@ -36,6 +38,9 @@ function App() {
     const [sort, setSort] = useState('startDate,asc')
     const [page, setPage] = useState(0)
     const [totalPages, setTotalPages] = useState(0)
+
+    const [user, setUser] = useState<User | null>(loadUser())
+    const [showAuth, setShowAuth] = useState(false)
 
     useEffect(() => {
         fetch('/api/voivodeships').then((r) => r.json()).then(setVoivodeships)
@@ -84,8 +89,33 @@ function App() {
         setPage(0)
     }
 
+    function handleLogin(u: User) {
+        saveUser(u)
+        setUser(u)
+        setShowAuth(false)
+    }
+
+    function handleLogout() {
+        saveUser(null)
+        setUser(null)
+    }
+
     return (
         <div style={{ maxWidth: 700, margin: '40px auto', padding: 16 }}>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
+                {user ? (
+                    <>
+                        <span>{user.displayName ?? user.email} ({user.role})</span>
+                        <button onClick={handleLogout}>Wyloguj</button>
+                    </>
+                ) : (
+                    <button onClick={() => setShowAuth(!showAuth)}>Zaloguj / Zarejestruj</button>
+                )}
+            </div>
+
+            {showAuth && !user && <AuthForm onSuccess={handleLogin} />}
+
             <h1>Wydarzenia w Polsce</h1>
 
             <PolandMap
