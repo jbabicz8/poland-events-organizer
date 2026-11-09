@@ -25,6 +25,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/events/mine").hasAnyRole("ORGANIZER", "ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/events").hasAnyRole("ORGANIZER", "ADMIN")
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/events/*").hasRole("ORGANIZER")
                         .requestMatchers(HttpMethod.GET,
                                 "/api/events/**",
                                 "/api/voivodeships",
