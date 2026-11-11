@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import pl.babicz.events_backend.dto.AdminEventDto;
+import pl.babicz.events_backend.dto.AdminEventRequest;
 import pl.babicz.events_backend.dto.EventRequest;
 import pl.babicz.events_backend.model.AppUser;
 import pl.babicz.events_backend.model.Category;
@@ -64,6 +65,20 @@ public class AdminEventService {
     @Transactional
     public void delete(Long id) {
         eventRepository.delete(findEvent(id));
+    }
+
+    @Transactional
+    public AdminEventDto create(String adminEmail, AdminEventRequest request) {
+        Event event = new Event();
+        eventService.applyRequest(event, request.event());
+        event.setOrganizerName(request.organizerName().trim());
+        event.setModerator(findUser(adminEmail));
+        event.setStatus(EventStatus.APPROVED);
+        event.setCheckinCount(0);
+        event.setCreatedAt(LocalDateTime.now());
+
+        eventRepository.save(event);
+        return toDto(event);
     }
 
     private Event findEvent(Long id) {

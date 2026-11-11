@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.http.HttpStatus;
+import pl.babicz.events_backend.dto.AdminEventRequest;
 import pl.babicz.events_backend.dto.EventRequest;
 import pl.babicz.events_backend.dto.AdminEventDto;
 import pl.babicz.events_backend.dto.RejectRequest;
@@ -43,6 +44,13 @@ public class AdminEventController {
     public AdminEventDto update(@PathVariable Long id,
                                 @Valid @RequestBody EventRequest request) {
         return adminEventService.update(id, request);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public AdminEventDto create (@Valid @RequestBody AdminEventRequest request,
+                                 Authentication authentication) {
+        return adminEventService.create(authentication.getName(), request);
     }
 
     @DeleteMapping("/{id}")
