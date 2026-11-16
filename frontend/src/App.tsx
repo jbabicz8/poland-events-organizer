@@ -4,6 +4,7 @@ import AuthForm from './AuthForm'
 import EventForm from './EventForm'
 import MyEvents from './MyEvents.tsx'
 import AdminPanel from './AdminPanel'
+import ResetPasswordForm from './ResetPasswordForm'
 import { loadUser, saveUser, type User } from './auth'
 
 type EventItem = {
@@ -46,6 +47,10 @@ function App() {
     const [user, setUser] = useState<User | null>(loadUser())
     const [showAuth, setShowAuth] = useState(false)
     const [view, setView] = useState<View>('events')
+
+    const [resetToken, setResetToken] = useState<string | null>(
+        () => new URLSearchParams(window.location.search).get('reset'),
+    )
 
     useEffect(() => {
         fetch('/api/voivodeships').then((r) => r.json()).then(setVoivodeships)
@@ -104,6 +109,21 @@ function App() {
         saveUser(null)
         setUser(null)
         setView('events')
+    }
+
+    if (resetToken) {
+        return (
+            <div style={{ maxWidth: 700, margin: '40px auto', padding: 16 }}>
+                <ResetPasswordForm
+                    token={resetToken}
+                    onDone={() => {
+                        window.history.replaceState({}, '', '/')
+                        setResetToken(null)
+                        setShowAuth(true)
+                    }}
+                />
+            </div>
+        )
     }
 
     return (

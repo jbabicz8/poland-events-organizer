@@ -9,6 +9,10 @@ import pl.babicz.events_backend.dto.AuthResponse;
 import pl.babicz.events_backend.dto.LoginRequest;
 import pl.babicz.events_backend.dto.RegisterRequest;
 import pl.babicz.events_backend.service.AuthService;
+import pl.babicz.events_backend.service.PasswordResetService;
+import pl.babicz.events_backend.dto.ForgotPasswordRequest;
+import pl.babicz.events_backend.dto.ResetPasswordRequest;
+import pl.babicz.events_backend.service.PasswordResetService;
 
 import java.util.Map;
 
@@ -18,6 +22,7 @@ import java.util.Map;
 public class AuthController {
 
     private final AuthService authService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
@@ -37,5 +42,18 @@ public class AuthController {
                 "email", authentication.getName(),
                 "authorities", authentication.getAuthorities().toString()
         );
+    }
+
+    @PostMapping("/forgot-password")
+    public Map<String, String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        passwordResetService.requestReset(request.email());
+        return Map.of("message",
+                "Jeśli konto o takim adresie istnieje, wysłaliśmy na nie link do zmiany hasła");
+    }
+
+    @PostMapping("/reset-password")
+    public Map<String, String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        passwordResetService.resetPassword(request.token(), request.password());
+        return Map.of("message", "Hasło zostało zmienione");
     }
 }
