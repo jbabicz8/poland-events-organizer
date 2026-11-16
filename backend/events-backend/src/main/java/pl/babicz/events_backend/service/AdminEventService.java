@@ -1,6 +1,7 @@
 package pl.babicz.events_backend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -102,6 +103,14 @@ public class AdminEventService {
                         HttpStatus.UNAUTHORIZED));
     }
 
+    @Transactional(readOnly = true)
+    public List<AdminEventDto> getAll() {
+        return eventRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::toDto)
+                .toList();
+    }
+
     private AdminEventDto toDto(Event e) {
         String organizer = e.getOrganizerName();
         if (organizer == null && e.getOrganizer() != null) {
@@ -119,8 +128,11 @@ public class AdminEventService {
                 e.getEndDate(),
                 e.getCity(),
                 e.getAddress(),
+                e.getVoivodeship() != null ? e.getVoivodeship().getId() : null,
                 e.getVoivodeship() != null ? e.getVoivodeship().getName() : null,
-                e.getCategories().stream().map(Category::getName).toList(), organizer,
+                e.getCategories().stream().map(Category::getId).toList(),
+                e.getCategories().stream().map(Category::getName).toList(),
+                organizer,
                 e.getStatus(),
                 e.getRejectionReason(),
                 e.getCreatedAt()

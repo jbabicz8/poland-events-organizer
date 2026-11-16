@@ -26,8 +26,8 @@ function AuthForm({ onSuccess }: Props) {
             setError('Hasło musi mieć co najmniej 8 znaków')
             return
         }
-        if ( displayName === '' ) {
-            setError('Wybierz poprawną nazwę użytkownika!')
+        if (mode === 'register' && !displayName.trim()) {
+            setError('Podaj nazwę użytkownika.')
             return
         }
 

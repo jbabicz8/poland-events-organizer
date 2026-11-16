@@ -58,4 +58,9 @@ public class AdminEventController {
     public void delete(@PathVariable Long id) {
         adminEventService.delete(id);
     }
+
+    @GetMapping
+    public List<AdminEventDto> all() {
+        return adminEventService.getAll();
+    }
 }

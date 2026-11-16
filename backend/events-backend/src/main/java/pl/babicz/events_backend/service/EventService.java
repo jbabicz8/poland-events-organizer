@@ -151,9 +151,14 @@ public class EventService {
         return new MyEventDto(
                 e.getId(),
                 e.getTitle(),
+                e.getDescription(),
                 e.getStartDate(),
+                e.getEndDate(),
                 e.getCity(),
+                e.getAddress(),
+                e.getVoivodeship() != null ? e.getVoivodeship().getId() : null,
                 e.getVoivodeship() != null ? e.getVoivodeship().getName() : null,
+                e.getCategories().stream().map(Category::getId).toList(),
                 e.getCategories().stream().map(Category::getName).toList(),
                 e.getStatus(),
                 e.getRejectionReason()

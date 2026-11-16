@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react'
 import PolandMap from './PolandMap'
 import AuthForm from './AuthForm'
+import EventForm from './EventForm'
+import MyEvents from './MyEvents.tsx'
+import AdminPanel from './AdminPanel'
 import { loadUser, saveUser, type User } from './auth'
 
 type EventItem = {
@@ -19,6 +22,7 @@ type Option = {
 
 type Voivodeship = Option & { mapCode: string }
 
+type View = 'events' | 'new' | 'mine' | 'admin'
 
 const PAGE_SIZE = 5
 
@@ -26,8 +30,8 @@ function App() {
     const [events, setEvents] = useState<EventItem[]>([])
     const [error, setError] = useState<string | null>(null)
 
-    const [categories, setCategories] = useState<Option[]>([])
     const [voivodeships, setVoivodeships] = useState<Voivodeship[]>([])
+    const [categories, setCategories] = useState<Option[]>([])
 
     const [voivodeshipId, setVoivodeshipId] = useState('')
     const [categoryId, setCategoryId] = useState('')
@@ -41,6 +45,7 @@ function App() {
 
     const [user, setUser] = useState<User | null>(loadUser())
     const [showAuth, setShowAuth] = useState(false)
+    const [view, setView] = useState<View>('events')
 
     useEffect(() => {
         fetch('/api/voivodeships').then((r) => r.json()).then(setVoivodeships)
@@ -98,11 +103,11 @@ function App() {
     function handleLogout() {
         saveUser(null)
         setUser(null)
+        setView('events')
     }
 
     return (
         <div style={{ maxWidth: 700, margin: '40px auto', padding: 16 }}>
-
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8 }}>
                 {user ? (
                     <>
@@ -118,80 +123,118 @@ function App() {
 
             <h1>Wydarzenia w Polsce</h1>
 
-            <PolandMap
-                voivodeships={voivodeships}
-                selectedId={voivodeshipId}
-                onSelect={onFilterChange(setVoivodeshipId)}
-            />
+            <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
+                <button onClick={() => setView('events')}>Wydarzenia</button>
+                {user?.role === 'ORGANIZER' && (
+                    <>
+                        <button onClick={() => setView('new')}>Dodaj wydarzenie</button>
+                        <button onClick={() => setView('mine')}>Moje zgłoszenia</button>
+                    </>
+                )}
+                {user?.role === 'ADMIN' && (
+                    <button onClick={() => setView('admin')}>Panel administratora</button>
+                )}
+            </nav>
 
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
-                <input
-                    placeholder="Szukaj po nazwie..."
-                    value={query}
-                    onChange={(e) => onFilterChange(setQuery)(e.target.value)}
-                />
-                <select
-                    value={voivodeshipId}
-                    onChange={(e) => onFilterChange(setVoivodeshipId)(e.target.value)}
-                >
-                    <option value="">Całe województwa</option>
-                    {voivodeships.map((v) => (
-                        <option key={v.id} value={v.id}>{v.name}</option>
+            {view === 'events' && (
+                <>
+                    <PolandMap
+                        voivodeships={voivodeships}
+                        selectedId={voivodeshipId}
+                        onSelect={onFilterChange(setVoivodeshipId)}
+                    />
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
+                        <input
+                            placeholder="Szukaj po nazwie..."
+                            value={query}
+                            onChange={(e) => onFilterChange(setQuery)(e.target.value)}
+                        />
+                        <select
+                            value={voivodeshipId}
+                            onChange={(e) => onFilterChange(setVoivodeshipId)(e.target.value)}
+                        >
+                            <option value="">Całe województwa</option>
+                            {voivodeships.map((v) => (
+                                <option key={v.id} value={v.id}>{v.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={categoryId}
+                            onChange={(e) => onFilterChange(setCategoryId)(e.target.value)}
+                        >
+                            <option value="">Wszystkie kategorie</option>
+                            {categories.map((c) => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <input
+                            type="date"
+                            value={from}
+                            onChange={(e) => onFilterChange(setFrom)(e.target.value)}
+                        />
+                        <input
+                            type="date"
+                            value={to}
+                            onChange={(e) => onFilterChange(setTo)(e.target.value)}
+                        />
+                        <select value={sort} onChange={(e) => onFilterChange(setSort)(e.target.value)}>
+                            <option value="startDate,asc">Data: od najbliższych</option>
+                            <option value="startDate,desc">Data: od najdalszych</option>
+                            <option value="title,asc">Nazwa: A–Z</option>
+                            <option value="title,desc">Nazwa: Z–A</option>
+                        </select>
+                        <button onClick={resetFilters}>Wyczyść</button>
+                    </div>
+
+                    {error && <p>{error}</p>}
+                    {!error && events.length === 0 && <p>Brak wydarzeń dla wybranych filtrów.</p>}
+
+                    {events.map((e) => (
+                        <div
+                            key={e.id}
+                            style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16, marginBottom: 12 }}
+                        >
+                            <h2>{e.title}</h2>
+                            <p>{e.city}, {e.voivodeship}</p>
+                            <p>{new Date(e.startDate).toLocaleString('pl-PL')}</p>
+                            <p>{e.categories.join(', ')}</p>
+                        </div>
                     ))}
-                </select>
-                <select
-                    value={categoryId}
-                    onChange={(e) => onFilterChange(setCategoryId)(e.target.value)}
-                >
-                    <option value="">Wszystkie kategorie</option>
-                    {categories.map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                </select>
-                <input
-                    type="date"
-                    value={from}
-                    onChange={(e) => onFilterChange(setFrom)(e.target.value)}
+
+                    {totalPages > 1 && (
+                        <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center' }}>
+                            <button onClick={() => setPage(page - 1)} disabled={page === 0}>
+                                ← Poprzednia
+                            </button>
+                            <span>Strona {page + 1} z {totalPages}</span>
+                            <button onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1}>
+                                Następna →
+                            </button>
+                        </div>
+                    )}
+                </>
+            )}
+
+            {view === 'new' && user && (
+                <EventForm
+                    user={user}
+                    voivodeships={voivodeships}
+                    categories={categories}
+                    url="/api/events"
+                    method="POST"
+                    heading="Dodaj wydarzenie"
+                    submitLabel="Wyślij do weryfikacji"
+                    onDone={() => setView('mine')}
                 />
-                <input
-                    type="date"
-                    value={to}
-                    onChange={(e) => onFilterChange(setTo)(e.target.value)}
-                />
-                <select value={sort} onChange={(e) => onFilterChange(setSort)(e.target.value)}>
-                    <option value="startDate,asc">Data: od najbliższych</option>
-                    <option value="startDate,desc">Data: od najdalszych</option>
-                    <option value="title,asc">Nazwa: A–Z</option>
-                    <option value="title,desc">Nazwa: Z–A</option>
-                </select>
-                <button onClick={resetFilters}>Wyczyść</button>
-            </div>
+            )}
 
-            {error && <p>{error}</p>}
-            {!error && events.length === 0 && <p>Brak wydarzeń dla wybranych filtrów.</p>}
+            {view === 'mine' && user && (
+                <MyEvents user={user} voivodeships={voivodeships} categories={categories} />
+            )}
 
-            {events.map((e) => (
-                <div
-                    key={e.id}
-                    style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16, marginBottom: 12 }}
-                >
-                    <h2>{e.title}</h2>
-                    <p>{e.city}, {e.voivodeship}</p>
-                    <p>{new Date(e.startDate).toLocaleString('pl-PL')}</p>
-                    <p>{e.categories.join(', ')}</p>
-                </div>
-            ))}
-
-            {totalPages > 1 && (
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'center' }}>
-                    <button onClick={() => setPage(page - 1)} disabled={page === 0}>
-                        ← Poprzednia
-                    </button>
-                    <span>Strona {page + 1} z {totalPages}</span>
-                    <button onClick={() => setPage(page + 1)} disabled={page >= totalPages - 1}>
-                        Następna →
-                    </button>
-                </div>
+            {view === 'admin' && user && (
+                <AdminPanel user={user} voivodeships={voivodeships} categories={categories} />
             )}
         </div>
     )
