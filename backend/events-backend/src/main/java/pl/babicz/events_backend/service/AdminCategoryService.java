@@ -1,6 +1,7 @@
 package pl.babicz.events_backend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,6 +10,8 @@ import pl.babicz.events_backend.dto.CategoryDto;
 import pl.babicz.events_backend.dto.CategoryRequest;
 import pl.babicz.events_backend.model.Category;
 import pl.babicz.events_backend.repository.CategoryRepository;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -41,6 +44,14 @@ public class AdminCategoryService {
         category.setName(name);
         category.setDescription(request.description());
         return toDto(category);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CategoryDto> getAll() {
+        return categoryRepository.findAll(Sort.by("name"))
+                .stream()
+                .map(this::toDto)
+                .toList();
     }
 
     // Nazwa nie może się powtarzać, dlatego potrzebuje zaimplementować metodę sprawdzającą.

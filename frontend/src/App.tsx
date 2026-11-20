@@ -136,6 +136,10 @@ function App() {
         )
     }
 
+    function reloadCategories() {
+        fetch('/api/categories').then((r) => r.json()).then(setCategories)
+    }
+
     if (resetToken) {
         return (
             <div style={{ maxWidth: 700, margin: '40px auto', padding: 16 }}>
@@ -298,7 +302,12 @@ function App() {
             )}
 
             {view === 'admin' && user && (
-                <AdminPanel user={user} voivodeships={voivodeships} categories={categories} />
+                <AdminPanel
+                    user={user}
+                    voivodeships={voivodeships}
+                    categories={categories}
+                    onCategoriesChanged={reloadCategories}
+                />
             )}
         </div>
     )

@@ -29,6 +29,7 @@ type Props = {
     method: 'POST' | 'PUT'
     heading: string
     submitLabel: string
+    withOrganizerName?: boolean
     onDone: () => void
     onCancel?: () => void
 }
@@ -42,9 +43,11 @@ function EventForm({
                        method,
                        heading,
                        submitLabel,
+                       withOrganizerName = false,
                        onDone,
                        onCancel,
                    }: Props) {
+    const [organizerName, setOrganizerName] = useState('')
     const [title, setTitle] = useState(initial?.title ?? '')
     const [description, setDescription] = useState(initial?.description ?? '')
     const [startDate, setStartDate] = useState(initial?.startDate.slice(0, 16) ?? '')
@@ -69,6 +72,7 @@ function EventForm({
 
     // Walidacja po stronie klienta (NF4). Zwraca komunikat błędu albo null.
     function validate(): string | null {
+        if (withOrganizerName && !organizerName.trim()) return 'Podaj nazwę organizatora'
         if (!title.trim()) return 'Podaj nazwę wydarzenia'
         if (!startDate) return 'Podaj datę rozpoczęcia'
         if (endDate && endDate < startDate) {
@@ -98,7 +102,7 @@ function EventForm({
         setError(null)
         setSaving(true)
         try {
-            await api(user, url, method, {
+            const eventData = {
                 title,
                 description,
                 startDate,
@@ -108,7 +112,13 @@ function EventForm({
                 voivodeshipId: Number(voivodeshipId),
                 categoryIds,
                 capacity: capacity ? Number(capacity) : null,
-            })
+            }
+            await api(
+                user,
+                url,
+                method,
+                withOrganizerName ? { organizerName, event: eventData } : eventData,
+            )
             onDone()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Wystąpił błąd')
@@ -123,6 +133,17 @@ function EventForm({
             style={{ display: 'flex', flexDirection: 'column', gap: 10 }}
         >
             <h2>{heading}</h2>
+
+            {withOrganizerName && (
+                <label>
+                    Organizator (nazwa osoby lub organizacji) *
+                    <input
+                        style={{ width: '100%' }}
+                        value={organizerName}
+                        onChange={(e) => setOrganizerName(e.target.value)}
+                    />
+                </label>
+            )}
 
             <label>
                 Nazwa *
