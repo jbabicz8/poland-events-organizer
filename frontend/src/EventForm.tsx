@@ -17,6 +17,7 @@ export type EventFormData = {
     address: string | null
     voivodeshipId: number | null
     categoryIds: number[]
+    capacity: number | null
 }
 
 type Props = {
@@ -54,6 +55,9 @@ function EventForm({
         initial?.voivodeshipId ? String(initial.voivodeshipId) : '',
     )
     const [categoryIds, setCategoryIds] = useState<number[]>(initial?.categoryIds ?? [])
+    const [capacity, setCapacity] = useState(
+        initial?.capacity != null ? String(initial.capacity) : '',
+    )
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
 
@@ -73,6 +77,12 @@ function EventForm({
         if (!city.trim()) return 'Podaj miejscowość'
         if (!voivodeshipId) return 'Wybierz województwo'
         if (categoryIds.length === 0) return 'Wybierz co najmniej jedną kategorię'
+        if (capacity) {
+            const n = Number(capacity)
+            if (!Number.isInteger(n) || n < 1) {
+                return 'Liczba miejsc musi być liczbą całkowitą większą od zera'
+            }
+        }
         return null
     }
 
@@ -97,6 +107,7 @@ function EventForm({
                 address,
                 voivodeshipId: Number(voivodeshipId),
                 categoryIds,
+                capacity: capacity ? Number(capacity) : null,
             })
             onDone()
         } catch (err) {
@@ -176,6 +187,16 @@ function EventForm({
                         <option key={v.id} value={v.id}>{v.name}</option>
                     ))}
                 </select>
+            </label>
+
+            <label>
+                Liczba miejsc (zostaw puste, jeśli bez limitu)
+                <input
+                    type="number"
+                    min={1}
+                    value={capacity}
+                    onChange={(e) => setCapacity(e.target.value)}
+                />
             </label>
 
             <fieldset>

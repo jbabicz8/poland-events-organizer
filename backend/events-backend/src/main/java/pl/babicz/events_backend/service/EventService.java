@@ -57,7 +57,7 @@ public class EventService {
         applyRequest(event, request);
         event.setOrganizer(organizer);
         event.setStatus(EventStatus.PENDING);
-        event.setCheckinCount(0);
+        event.setParticipantCount(0);
         event.setCreatedAt(LocalDateTime.now());
 
         eventRepository.save(event);
@@ -93,6 +93,13 @@ public class EventService {
                     "Data zakończenia nie może być wcześniejsza niż data rozpoczęcia");
         }
 
+        Integer taken = event.getParticipantCount();
+        if (request.capacity() != null && taken != null && request.capacity() < taken) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Limit miejsc nie może być mniejszy niż liczba osób, które już zadeklarowały udział ("
+                            + taken + ")");
+        }
+
         Voivodeship voivodeship = voivodeshipRepository.findById(request.voivodeshipId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST,
                         "Nie znaleziono województwa"));
@@ -111,6 +118,7 @@ public class EventService {
         event.setAddress(request.address());
         event.setVoivodeship(voivodeship);
         event.setCategories(new HashSet<>(categories));
+        event.setCapacity(request.capacity());
     }
 
     @Transactional(readOnly = true)
@@ -127,7 +135,7 @@ public class EventService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
     }
 
-    private EventDto toDto(Event e) {
+    EventDto toDto(Event e) {
         String organizer = e.getOrganizerName() != null
                 ? e.getOrganizerName()
                 : (e.getOrganizer() != null ? e.getOrganizer().getDisplayName() : null);
@@ -143,7 +151,8 @@ public class EventService {
                 e.getVoivodeship() != null ? e.getVoivodeship().getName() : null,
                 e.getCategories().stream().map(Category::getName).toList(),
                 organizer,
-                e.getCheckinCount()
+                e.getParticipantCount(),
+                e.getCapacity()
         );
     }
 
@@ -161,7 +170,9 @@ public class EventService {
                 e.getCategories().stream().map(Category::getId).toList(),
                 e.getCategories().stream().map(Category::getName).toList(),
                 e.getStatus(),
-                e.getRejectionReason()
+                e.getRejectionReason(),
+                e.getCapacity(),
+                e.getParticipantCount()
         );
     }
 }

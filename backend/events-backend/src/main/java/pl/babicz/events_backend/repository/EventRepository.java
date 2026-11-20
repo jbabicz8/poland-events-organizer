@@ -2,6 +2,9 @@ package pl.babicz.events_backend.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import pl.babicz.events_backend.model.Event;
 import pl.babicz.events_backend.model.EventStatus;
 
@@ -19,4 +22,17 @@ public interface EventRepository
 
     // Znajdź wydarzenia po statusie i posortuj według daty utworzenia w kolejności rosnącej.
     List<Event> findByStatusOrderByCreatedAtAsc(EventStatus status);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("""
+        update Event e
+        set e.participantCount = e.participantCount + 1
+        where e.id = :id
+          and (e.capacity is null or e.participantCount < e.capacity)
+        """)
+    int incrementParticipants(@Param("id") Long id);
+
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query("update Event e set e.participantCount = e.participantCount - 1 where e.id = :id and e.participantCount > 0")
+    void decrementParticipants(@Param("id") Long id);
 }

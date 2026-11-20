@@ -23,6 +23,8 @@ type AdminEvent = {
     organizer: string | null
     status: 'PENDING' | 'APPROVED' | 'REJECTED'
     rejectionReason: string | null
+    capacity: number | null
+    participantCount: number
 }
 
 type Props = {
@@ -147,6 +149,10 @@ function AdminPanel({ user, voivodeships, categories }: Props) {
                         {e.endDate && ` – ${new Date(e.endDate).toLocaleString('pl-PL')}`}
                     </p>
                     <p>{e.categories.join(', ')}</p>
+                    <p>
+                        Chętnych: {e.participantCount}
+                        {e.capacity != null && ` / ${e.capacity} miejsc`}
+                    </p>
                     {e.description && <p>{e.description}</p>}
                     {e.status === 'REJECTED' && e.rejectionReason && (
                         <p>Powód odrzucenia: {e.rejectionReason}</p>

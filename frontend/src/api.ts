@@ -16,6 +16,15 @@ export async function api<T>(
     })
 
     if (!res.ok) {
+        try {
+            const data = await res.json()
+            if (typeof data.message === 'string' && data.message) {
+                throw new Error(data.message)
+            }
+        } catch (err) {
+            if (err instanceof Error && err.message) throw err
+        }
+
         if (res.status === 400) throw new Error('Sprawdź poprawność wpisanych danych')
         if (res.status === 401) throw new Error('Sesja wygasła, zaloguj się ponownie')
         if (res.status === 403) throw new Error('Brak uprawnień do tej operacji')

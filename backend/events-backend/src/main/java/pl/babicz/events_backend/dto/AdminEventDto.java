@@ -20,6 +20,8 @@ public record AdminEventDto(
         String organizer,
         EventStatus status,
         String rejectionReason,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        Integer capacity,
+        Integer participantCount
 ) {
 }

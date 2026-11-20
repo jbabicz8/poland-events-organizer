@@ -26,14 +26,15 @@ public class SecurityConfig {
                         .requestMatchers("/error").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login",
                                 "/api/auth/forgot-password", "/api/auth/reset-password").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/events/mine").hasAnyRole("ORGANIZER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/events").hasAnyRole("ORGANIZER")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/events/mine").hasAnyRole("ORGANIZER", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/events/participations/mine").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/participation").hasRole("USER")
+                        .requestMatchers(HttpMethod.DELETE, "/api/events/*/participation").hasRole("USER")
+                        .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ORGANIZER")
                         .requestMatchers(HttpMethod.PUT, "/api/events/*").hasRole("ORGANIZER")
                         .requestMatchers(HttpMethod.GET,
-                                "/api/events/**",
-                                "/api/voivodeships",
-                                "/api/categories").permitAll()
+                                "/api/events/**", "/api/voivodeships", "/api/categories").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e

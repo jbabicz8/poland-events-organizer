@@ -75,5 +75,7 @@ public class Event {
     private LocalDateTime updatedAt;
 
     // Przechowywanie liczby zameldowań.
-    private Integer checkinCount;
+    private Integer participantCount;
+
+    private Integer capacity;
 }

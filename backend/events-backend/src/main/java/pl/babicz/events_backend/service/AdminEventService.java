@@ -75,7 +75,7 @@ public class AdminEventService {
         event.setOrganizerName(request.organizerName().trim());
         event.setModerator(findUser(adminEmail));
         event.setStatus(EventStatus.APPROVED);
-        event.setCheckinCount(0);
+        event.setParticipantCount(0);
         event.setCreatedAt(LocalDateTime.now());
 
         eventRepository.save(event);
@@ -135,7 +135,9 @@ public class AdminEventService {
                 organizer,
                 e.getStatus(),
                 e.getRejectionReason(),
-                e.getCreatedAt()
+                e.getCreatedAt(),
+                e.getCapacity(),
+                e.getParticipantCount()
         );
     }
 }

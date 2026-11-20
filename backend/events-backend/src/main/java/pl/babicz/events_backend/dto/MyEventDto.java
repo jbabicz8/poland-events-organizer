@@ -18,6 +18,8 @@ public record MyEventDto(
         List<Long> categoryIds,
         List<String> categories,
         EventStatus status,
-        String rejectionReason
+        String rejectionReason,
+        Integer capacity,
+        Integer participantCount
 ) {
 }

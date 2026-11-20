@@ -22,6 +22,8 @@ type MyEvent = {
     categories: string[]
     status: 'PENDING' | 'APPROVED' | 'REJECTED'
     rejectionReason: string | null
+    capacity: number | null
+    participantCount: number
 }
 
 type Props = {
@@ -91,6 +93,10 @@ function MyEvents({ user, voivodeships, categories }: Props) {
                     <p>{e.city}, {e.voivodeship}</p>
                     <p>{new Date(e.startDate).toLocaleString('pl-PL')}</p>
                     <p>{e.categories.join(', ')}</p>
+                    <p>
+                        Chętnych: {e.participantCount}
+                        {e.capacity != null && ` / ${e.capacity} miejsc`}
+                    </p>
                     <p style={{ fontWeight: 600, color: STATUS_COLORS[e.status] }}>
                         {STATUS_LABELS[e.status]}
                     </p>

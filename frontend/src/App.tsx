@@ -2,10 +2,14 @@ import { useEffect, useState } from 'react'
 import PolandMap from './PolandMap'
 import AuthForm from './AuthForm'
 import EventForm from './EventForm'
-import MyEvents from './MyEvents.tsx'
+import MyEvents from './MyEvents'
 import AdminPanel from './AdminPanel'
 import ResetPasswordForm from './ResetPasswordForm'
+import EventDetailsView from './EventDetailsView'
+import MyParticipations from './MyParticipations'
+import { api } from './api'
 import { loadUser, saveUser, type User } from './auth'
+import type { EventSummary } from './types'
 
 type EventItem = {
     id: number
@@ -23,7 +27,7 @@ type Option = {
 
 type Voivodeship = Option & { mapCode: string }
 
-type View = 'events' | 'new' | 'mine' | 'admin'
+type View = 'events' | 'details' | 'new' | 'mine' | 'admin' | 'participations'
 
 const PAGE_SIZE = 5
 
@@ -47,7 +51,8 @@ function App() {
     const [user, setUser] = useState<User | null>(loadUser())
     const [showAuth, setShowAuth] = useState(false)
     const [view, setView] = useState<View>('events')
-
+    const [selectedEventId, setSelectedEventId] = useState<number | null>(null)
+    const [participationIds, setParticipationIds] = useState<number[]>([])
     const [resetToken, setResetToken] = useState<string | null>(
         () => new URLSearchParams(window.location.search).get('reset'),
     )
@@ -56,6 +61,14 @@ function App() {
         fetch('/api/voivodeships').then((r) => r.json()).then(setVoivodeships)
         fetch('/api/categories').then((r) => r.json()).then(setCategories)
     }, [])
+
+    // Po zalogowaniu użytkownik (rola USER) pobiera listę wydarzeń, w których deklaruje udział
+    useEffect(() => {
+        if (!user || user.role !== 'USER') return
+        api<EventSummary[]>(user, '/api/events/participations/mine')
+            .then((list) => setParticipationIds(list.map((e) => e.id)))
+            .catch(() => setParticipationIds([]))
+    }, [user])
 
     useEffect(() => {
         const params = new URLSearchParams()
@@ -108,7 +121,19 @@ function App() {
     function handleLogout() {
         saveUser(null)
         setUser(null)
+        setParticipationIds([])
         setView('events')
+    }
+
+    function openDetails(id: number) {
+        setSelectedEventId(id)
+        setView('details')
+    }
+
+    function handleParticipationChange(eventId: number, participating: boolean) {
+        setParticipationIds((ids) =>
+            participating ? [...ids, eventId] : ids.filter((id) => id !== eventId),
+        )
     }
 
     if (resetToken) {
@@ -145,6 +170,9 @@ function App() {
 
             <nav style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
                 <button onClick={() => setView('events')}>Wydarzenia</button>
+                {user?.role === 'USER' && (
+                    <button onClick={() => setView('participations')}>Biorę udział</button>
+                )}
                 {user?.role === 'ORGANIZER' && (
                     <>
                         <button onClick={() => setView('new')}>Dodaj wydarzenie</button>
@@ -219,6 +247,7 @@ function App() {
                             <p>{e.city}, {e.voivodeship}</p>
                             <p>{new Date(e.startDate).toLocaleString('pl-PL')}</p>
                             <p>{e.categories.join(', ')}</p>
+                            <button onClick={() => openDetails(e.id)}>Szczegóły</button>
                         </div>
                     ))}
 
@@ -234,6 +263,21 @@ function App() {
                         </div>
                     )}
                 </>
+            )}
+
+            {view === 'details' && selectedEventId !== null && (
+                <EventDetailsView
+                    key={selectedEventId}
+                    eventId={selectedEventId}
+                    user={user}
+                    participating={user !== null && participationIds.includes(selectedEventId)}
+                    onParticipationChange={handleParticipationChange}
+                    onBack={() => setView('events')}
+                />
+            )}
+
+            {view === 'participations' && user && user.role === 'USER' && (
+                <MyParticipations user={user} onOpen={openDetails} />
             )}
 
             {view === 'new' && user && (
