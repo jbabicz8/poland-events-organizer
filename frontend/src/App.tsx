@@ -18,6 +18,7 @@ type EventItem = {
     startDate: string
     voivodeship: string
     categories: string[]
+    images: { id: number; url: string }[]
 }
 
 type Option = {
@@ -247,6 +248,13 @@ function App() {
                             key={e.id}
                             style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16, marginBottom: 12 }}
                         >
+                            {e.images.length > 0 && (
+                                <img
+                                    src={e.images[0].url}
+                                    alt=""
+                                    style={{ width: '100%', height: 160, objectFit: 'cover', borderRadius: 6 }}
+                                />
+                            )}
                             <h2>{e.title}</h2>
                             <p>{e.city}, {e.voivodeship}</p>
                             <p>{new Date(e.startDate).toLocaleString('pl-PL')}</p>

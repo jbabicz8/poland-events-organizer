@@ -3,6 +3,7 @@ import { api } from './api'
 import CategoriesAdmin from './CategoriesAdmin'
 import EventForm from './EventForm'
 import type { User } from './auth'
+import type { ImageItem} from "./types.ts";
 
 type Option = {
     id: number
@@ -26,6 +27,7 @@ type AdminEvent = {
     rejectionReason: string | null
     capacity: number | null
     participantCount: number
+    images: ImageItem[]
 }
 
 type Tab = 'pending' | 'all' | 'add' | 'categories'

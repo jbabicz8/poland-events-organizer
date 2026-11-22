@@ -65,6 +65,18 @@ function EventDetailsView({
             {event && (
                 <>
                     <h2>{event.title}</h2>
+                    {event.images.length > 0 && (
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                            {event.images.map((img) => (
+                                <img
+                                    key={img.id}
+                                    src={img.url}
+                                    alt={event.title}
+                                    style={{ height: 200, maxWidth: '100%', objectFit: 'cover', borderRadius: 6 }}
+                                />
+                            ))}
+                        </div>
+                    )}
                     <p>
                         {new Date(event.startDate).toLocaleString('pl-PL')}
                         {event.endDate && ` – ${new Date(event.endDate).toLocaleString('pl-PL')}`}

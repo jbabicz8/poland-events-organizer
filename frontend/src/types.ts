@@ -11,4 +11,10 @@ export type EventSummary = {
     organizerName: string | null
     participantCount: number | null
     capacity: number | null
+    images: ImageItem[]
+}
+
+export type ImageItem = {
+    id: number
+    url: string
 }

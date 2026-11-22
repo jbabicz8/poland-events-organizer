@@ -8,10 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
-import pl.babicz.events_backend.dto.EventDto;
-import pl.babicz.events_backend.dto.EventFilter;
-import pl.babicz.events_backend.dto.EventRequest;
-import pl.babicz.events_backend.dto.MyEventDto;
+import pl.babicz.events_backend.dto.*;
 import pl.babicz.events_backend.model.*;
 import pl.babicz.events_backend.repository.*;
 
@@ -135,6 +132,12 @@ public class EventService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
     }
 
+    List<ImageDto> toImageDtos(Event e) {
+        return e.getImages().stream()
+                .map(i -> new ImageDto(i.getId(), i.getUrl()))
+                .toList();
+    }
+
     EventDto toDto(Event e) {
         String organizer = e.getOrganizerName() != null
                 ? e.getOrganizerName()
@@ -152,7 +155,8 @@ public class EventService {
                 e.getCategories().stream().map(Category::getName).toList(),
                 organizer,
                 e.getParticipantCount(),
-                e.getCapacity()
+                e.getCapacity(),
+                toImageDtos(e)
         );
     }
 
@@ -172,7 +176,8 @@ public class EventService {
                 e.getStatus(),
                 e.getRejectionReason(),
                 e.getCapacity(),
-                e.getParticipantCount()
+                e.getParticipantCount(),
+                toImageDtos(e)
         );
     }
 }

@@ -6,6 +6,8 @@ import lombok.*;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.List;
+import java.util.ArrayList;
 
 @Entity
 @Getter @Setter @NoArgsConstructor
@@ -78,4 +80,8 @@ public class Event {
     private Integer participantCount;
 
     private Integer capacity;
+
+    @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("sortOrder ASC, id ASC")
+    private List<EventImage> images = new ArrayList<>();
 }

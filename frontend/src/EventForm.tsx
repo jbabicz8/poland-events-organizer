@@ -1,6 +1,12 @@
-import { useState } from 'react'
-import { api } from './api'
+import { useEffect, useRef, useState } from 'react'
+import { api, apiUpload } from './api'
 import type { User } from './auth'
+import type { ImageItem } from './types'
+
+const MAX_IMAGES = 7
+const MAX_SIZE = 10 * 1024 * 1024
+const MAX_DIMENSION = 1920
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 type Option = {
     id: number
@@ -18,6 +24,7 @@ export type EventFormData = {
     voivodeshipId: number | null
     categoryIds: number[]
     capacity: number | null
+    images: ImageItem[]
 }
 
 type Props = {
@@ -32,6 +39,40 @@ type Props = {
     withOrganizerName?: boolean
     onDone: () => void
     onCancel?: () => void
+}
+
+// Jedno zdjęcie na liście: albo już zapisane na serwerze, albo świeżo wybrane z dysku
+type PhotoItem = {
+    key: string
+    existing?: ImageItem
+    file?: File
+    previewUrl: string
+}
+
+// Zmniejsza zdjęcie do JPEG o dłuższym boku max 1920 px.
+// Przy okazji usuwa dane EXIF (np. lokalizację GPS) i uwzględnia obrót zdjęcia z telefonu.
+async function compressImage(file: File): Promise<File> {
+    const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' })
+    const scale = Math.min(1, MAX_DIMENSION / Math.max(bitmap.width, bitmap.height))
+
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.round(bitmap.width * scale)
+    canvas.height = Math.round(bitmap.height * scale)
+
+    const ctx = canvas.getContext('2d')
+    if (!ctx) throw new Error('Brak obsługi canvas')
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close()
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', 0.85),
+    )
+    if (!blob) throw new Error('Nie udało się zapisać zdjęcia')
+
+    const name = file.name.replace(/\.[^.]+$/, '') + '.jpg'
+    return new File([blob], name, { type: 'image/jpeg' })
 }
 
 function EventForm({
@@ -64,6 +105,32 @@ function EventForm({
     const [error, setError] = useState<string | null>(null)
     const [saving, setSaving] = useState(false)
 
+    // Zdjęcia
+    const [items, setItems] = useState<PhotoItem[]>(() =>
+        (initial?.images ?? []).map((img) => ({
+            key: 'e' + img.id,
+            existing: img,
+            previewUrl: img.url,
+        })),
+    )
+    const [orderDirty, setOrderDirty] = useState(false)
+    const [dragIndex, setDragIndex] = useState<number | null>(null)
+    const [dropActive, setDropActive] = useState(false)
+    const [processing, setProcessing] = useState(false)
+
+    // Przy zamknięciu formularza zwalniamy podglądy świeżo wybranych zdjęć
+    const itemsRef = useRef(items)
+    useEffect(() => {
+        itemsRef.current = items
+    }, [items])
+    useEffect(() => {
+        return () => {
+            itemsRef.current.forEach((i) => {
+                if (i.file) URL.revokeObjectURL(i.previewUrl)
+            })
+        }
+    }, [])
+
     function toggleCategory(id: number) {
         setCategoryIds((current) =>
             current.includes(id) ? current.filter((c) => c !== id) : [...current, id],
@@ -90,6 +157,72 @@ function EventForm({
         return null
     }
 
+    async function addFiles(files: File[]) {
+        if (files.length === 0) return
+
+        for (const file of files) {
+            if (!ALLOWED_TYPES.includes(file.type)) {
+                setError(
+                    `"${file.name}": dozwolone formaty to JPG, PNG i WebP (zdjęcia HEIC z iPhone'a zamień na JPG)`,
+                )
+                return
+            }
+            if (file.size > MAX_SIZE) {
+                setError(`"${file.name}": zdjęcie może mieć maksymalnie 10 MB`)
+                return
+            }
+        }
+        if (items.length + files.length > MAX_IMAGES) {
+            setError(`Wydarzenie może mieć maksymalnie ${MAX_IMAGES} zdjęć`)
+            return
+        }
+
+        setError(null)
+        setProcessing(true)
+        try {
+            const compressed = await Promise.all(files.map(compressImage))
+            setItems((current) => [
+                ...current,
+                ...compressed.map((file) => ({
+                    key: crypto.randomUUID(),
+                    file,
+                    previewUrl: URL.createObjectURL(file),
+                })),
+            ])
+        } catch {
+            setError('Nie udało się przetworzyć zdjęcia. Spróbuj użyć pliku JPG, PNG lub WebP.')
+        } finally {
+            setProcessing(false)
+        }
+    }
+
+    function moveItem(from: number, to: number) {
+        if (from === to) return
+        setItems((current) => {
+            const copy = [...current]
+            const [moved] = copy.splice(from, 1)
+            copy.splice(to, 0, moved)
+            return copy
+        })
+        setOrderDirty(true)
+    }
+
+    async function removeItem(item: PhotoItem) {
+        if (item.existing) {
+            if (!initial) return
+            try {
+                await api(user, `/api/events/${initial.id}/images/${item.existing.id}`, 'DELETE')
+            } catch (err) {
+                setError(err instanceof Error ? err.message : 'Wystąpił błąd')
+                return
+            }
+        } else {
+            URL.revokeObjectURL(item.previewUrl)
+        }
+        setItems((current) => current.filter((i) => i.key !== item.key))
+        setError(null)
+    }
+
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault()
 
@@ -113,12 +246,55 @@ function EventForm({
                 categoryIds,
                 capacity: capacity ? Number(capacity) : null,
             }
-            await api(
+            const saved = await api<{ id: number }>(
                 user,
                 url,
                 method,
                 withOrganizerName ? { organizerName, event: eventData } : eventData,
             )
+
+            // Wydarzenie jest zapisane. Wysyłamy nowe zdjęcia i ustawiamy kolejność z listy.
+            const eventId = initial?.id ?? saved.id
+            const failures: string[] = []
+            const finalIds: number[] = []
+            let uploadedAny = false
+
+            for (const item of items) {
+                if (item.existing) {
+                    finalIds.push(item.existing.id)
+                } else if (item.file) {
+                    try {
+                        const uploaded = await apiUpload<ImageItem>(
+                            user,
+                            `/api/events/${eventId}/images`,
+                            item.file,
+                        )
+                        finalIds.push(uploaded.id)
+                        uploadedAny = true
+                    } catch (err) {
+                        failures.push(`${item.file.name}: ${err instanceof Error ? err.message : 'błąd'}`)
+                    }
+                }
+            }
+
+            if (finalIds.length > 1 && (uploadedAny || orderDirty)) {
+                try {
+                    await api(user, `/api/events/${eventId}/images/order`, 'PUT', { imageIds: finalIds })
+                } catch (err) {
+                    failures.push(
+                        'Kolejność zdjęć: ' + (err instanceof Error ? err.message : 'błąd'),
+                    )
+                }
+            }
+
+            if (failures.length > 0) {
+                window.alert(
+                    'Wydarzenie zapisano, ale nie wszystko udało się zapisać:\n' +
+                    failures.join('\n') +
+                    '\nMożesz poprawić to, edytując wydarzenie.',
+                )
+            }
+
             onDone()
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Wystąpił błąd')
@@ -234,10 +410,114 @@ function EventForm({
                 ))}
             </fieldset>
 
+            <fieldset>
+                <legend>
+                    Zdjęcia (do {MAX_IMAGES}, JPG/PNG/WebP, do 10 MB każde)
+                </legend>
+
+                <p style={{ marginTop: 0 }}>
+                    Pierwsze zdjęcie jest okładką. Przeciągaj miniatury, aby zmienić kolejność.
+                    Zdjęcia są automatycznie zmniejszane przed wysłaniem.
+                </p>
+
+                {items.length > 0 && (
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 10 }}>
+                        {items.map((item, index) => (
+                            <div
+                                key={item.key}
+                                draggable
+                                onDragStart={() => setDragIndex(index)}
+                                onDragEnd={() => setDragIndex(null)}
+                                onDragOver={(e) => {
+                                    if (dragIndex !== null) e.preventDefault()
+                                }}
+                                onDrop={(e) => {
+                                    if (dragIndex !== null) {
+                                        e.preventDefault()
+                                        e.stopPropagation()
+                                        moveItem(dragIndex, index)
+                                        setDragIndex(null)
+                                    }
+                                }}
+                                style={{
+                                    width: 100,
+                                    textAlign: 'center',
+                                    cursor: 'grab',
+                                    opacity: dragIndex === index ? 0.4 : 1,
+                                    border: index === 0 ? '2px solid #1d4ed8' : '2px solid transparent',
+                                    borderRadius: 6,
+                                    padding: 2,
+                                }}
+                            >
+                                <img
+                                    src={item.previewUrl}
+                                    alt=""
+                                    draggable={false}
+                                    style={{ width: 90, height: 90, objectFit: 'cover', borderRadius: 4 }}
+                                />
+                                <div style={{ fontSize: 12, minHeight: 16 }}>
+                                    {index === 0 ? 'Okładka' : ''}
+                                </div>
+                                <div style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
+                                    {index > 0 && (
+                                        <button type="button" onClick={() => moveItem(index, 0)}>
+                                            Okładka
+                                        </button>
+                                    )}
+                                    <button type="button" onClick={() => removeItem(item)}>
+                                        Usuń
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div
+                    onDragOver={(e) => {
+                        if (dragIndex === null) {
+                            e.preventDefault()
+                            setDropActive(true)
+                        }
+                    }}
+                    onDragLeave={() => setDropActive(false)}
+                    onDrop={(e) => {
+                        if (dragIndex !== null) return
+                        e.preventDefault()
+                        setDropActive(false)
+                        void addFiles(Array.from(e.dataTransfer.files))
+                    }}
+                    style={{
+                        border: '2px dashed ' + (dropActive ? '#1d4ed8' : '#999'),
+                        background: dropActive ? '#eef2ff' : 'transparent',
+                        borderRadius: 8,
+                        padding: 16,
+                        textAlign: 'center',
+                    }}
+                >
+                    {processing ? (
+                        <p style={{ margin: 0 }}>Przetwarzanie zdjęć...</p>
+                    ) : (
+                        <>
+                            <p style={{ margin: '0 0 8px' }}>Upuść tutaj zdjęcia albo wybierz je z dysku</p>
+                            <input
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp"
+                                multiple
+                                onChange={(e) => {
+                                    void addFiles(Array.from(e.target.files ?? []))
+                                    e.target.value = ''
+                                }}
+                            />
+                        </>
+                    )}
+                </div>
+            </fieldset>
+
             {error && <p style={{ color: 'crimson', margin: 0 }}>{error}</p>}
 
             <div style={{ display: 'flex', gap: 8 }}>
-                <button type="submit" disabled={saving}>
+                <button type="submit" disabled={saving || processing}>
                     {saving ? 'Zapisywanie...' : submitLabel}
                 </button>
                 {onCancel && (

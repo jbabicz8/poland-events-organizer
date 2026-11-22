@@ -33,8 +33,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/api/events/*/participation").hasRole("USER")
                         .requestMatchers(HttpMethod.POST, "/api/events").hasRole("ORGANIZER")
                         .requestMatchers(HttpMethod.PUT, "/api/events/*").hasRole("ORGANIZER")
+                        .requestMatchers(HttpMethod.POST, "/api/events/*/images").hasAnyRole("ORGANIZER", "ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/events/*/images/*").hasAnyRole("ORGANIZER", "ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/events/*/images/order").hasAnyRole("ORGANIZER", "ADMIN")
                         .requestMatchers(HttpMethod.GET,
-                                "/api/events/**", "/api/voivodeships", "/api/categories").permitAll()
+                                "/api/events/**", "/api/voivodeships", "/api/categories","/api/images/*").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(e -> e

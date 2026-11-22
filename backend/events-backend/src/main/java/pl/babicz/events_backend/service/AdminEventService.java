@@ -26,6 +26,7 @@ public class AdminEventService {
     private final EventRepository eventRepository;
     private final AppUserRepository userRepository;
     private final EventService eventService;
+    private final ImageStorageService imageStorage;
 
     @Transactional(readOnly = true)
     public List<AdminEventDto> getPending() {
@@ -65,7 +66,9 @@ public class AdminEventService {
 
     @Transactional
     public void delete(Long id) {
-        eventRepository.delete(findEvent(id));
+        Event event = findEvent(id);
+        event.getImages().forEach(image -> imageStorage.deleteByUrl(image.getUrl()));
+        eventRepository.delete(event);
     }
 
     @Transactional
@@ -137,7 +140,8 @@ public class AdminEventService {
                 e.getRejectionReason(),
                 e.getCreatedAt(),
                 e.getCapacity(),
-                e.getParticipantCount()
+                e.getParticipantCount(),
+                eventService.toImageDtos(e)
         );
     }
 }

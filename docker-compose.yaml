@@ -10,6 +10,11 @@ services:
       - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U events -d events"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   mailpit:
     image: axllent/mailpit
@@ -18,5 +23,36 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  backend:
+    build: ./backend/events-backend
+    container_name: events-backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/events
+      SPRING_DATASOURCE_USERNAME: events
+      SPRING_DATASOURCE_PASSWORD: events
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: 1025
+      APP_FRONTEND_URL: http://localhost:3000
+      APP_UPLOAD_DIR: /data/uploads
+      APP_JWT_SECRET: ${JWT_SECRET:-zmien-ten-klucz-na-dlugi-losowy-ciag-znakow-min-32}
+      APP_ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@events.local}
+      APP_ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin12345}
+    volumes:
+      - uploads:/data/uploads
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build: ./frontend
+    container_name: events-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+
 volumes:
   db-data:
+  uploads:

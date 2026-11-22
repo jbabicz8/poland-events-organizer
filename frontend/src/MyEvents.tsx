@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { api } from './api'
 import EventForm from './EventForm'
 import type { User } from './auth'
+import type { ImageItem } from './types'
 
 type Option = {
     id: number
@@ -24,6 +25,7 @@ type MyEvent = {
     rejectionReason: string | null
     capacity: number | null
     participantCount: number
+    images: ImageItem[]
 }
 
 type Props = {

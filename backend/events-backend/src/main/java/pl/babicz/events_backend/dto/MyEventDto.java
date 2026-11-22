@@ -20,6 +20,7 @@ public record MyEventDto(
         EventStatus status,
         String rejectionReason,
         Integer capacity,
-        Integer participantCount
+        Integer participantCount,
+        List<ImageDto> images
 ) {
 }

@@ -22,6 +22,7 @@ public record AdminEventDto(
         String rejectionReason,
         LocalDateTime createdAt,
         Integer capacity,
-        Integer participantCount
+        Integer participantCount,
+        List<ImageDto> images
 ) {
 }

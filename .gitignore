@@ -13,3 +13,6 @@ dist/
 
 # Zmienne środowiskowe i hasła
 .env
+
+# Folder ze zdjęciami wydarzeń
+uploads/
