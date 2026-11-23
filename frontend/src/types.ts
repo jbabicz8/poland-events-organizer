@@ -12,6 +12,7 @@ export type EventSummary = {
     participantCount: number | null
     capacity: number | null
     images: ImageItem[]
+    websiteUrl: string | null
 }
 
 export type ImageItem = {

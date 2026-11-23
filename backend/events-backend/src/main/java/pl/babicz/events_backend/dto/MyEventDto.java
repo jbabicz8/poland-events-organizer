@@ -21,6 +21,7 @@ public record MyEventDto(
         String rejectionReason,
         Integer capacity,
         Integer participantCount,
-        List<ImageDto> images
+        List<ImageDto> images,
+        String websiteUrl
 ) {
 }

@@ -8,6 +8,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.List;
 import java.util.ArrayList;
+import jakarta.persistence.Column;
 
 @Entity
 @Getter @Setter @NoArgsConstructor
@@ -80,6 +81,9 @@ public class Event {
     private Integer participantCount;
 
     private Integer capacity;
+
+    @Column(name = "website_url", length = 500)
+    private String websiteUrl;
 
     @OneToMany(mappedBy = "event", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("sortOrder ASC, id ASC")

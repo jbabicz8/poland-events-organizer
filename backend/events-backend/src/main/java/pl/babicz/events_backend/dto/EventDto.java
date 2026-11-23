@@ -16,6 +16,7 @@ public record EventDto(
         String organizerName,
         Integer participantCount,
         Integer capacity,
-        List<ImageDto> images
+        List<ImageDto> images,
+        String websiteUrl
 ) {
 }

@@ -116,6 +116,7 @@ public class EventService {
         event.setVoivodeship(voivodeship);
         event.setCategories(new HashSet<>(categories));
         event.setCapacity(request.capacity());
+        event.setWebsiteUrl(request.websiteUrl());
     }
 
     @Transactional(readOnly = true)
@@ -156,7 +157,8 @@ public class EventService {
                 organizer,
                 e.getParticipantCount(),
                 e.getCapacity(),
-                toImageDtos(e)
+                toImageDtos(e),
+                e.getWebsiteUrl()
         );
     }
 
@@ -177,7 +179,8 @@ public class EventService {
                 e.getRejectionReason(),
                 e.getCapacity(),
                 e.getParticipantCount(),
-                toImageDtos(e)
+                toImageDtos(e),
+                e.getWebsiteUrl()
         );
     }
 }

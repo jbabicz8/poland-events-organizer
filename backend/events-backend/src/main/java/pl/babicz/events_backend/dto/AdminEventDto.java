@@ -23,6 +23,7 @@ public record AdminEventDto(
         LocalDateTime createdAt,
         Integer capacity,
         Integer participantCount,
-        List<ImageDto> images
+        List<ImageDto> images,
+        String websiteUrl
 ) {
 }

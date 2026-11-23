@@ -2,44 +2,48 @@ import { useEffect, useState } from 'react'
 import { api } from './api'
 import type { User } from './auth'
 import type { EventSummary } from './types'
+import EventCard from './EventCard'
 
 type Props = {
-    user: User
-    onOpen: (id: number) => void
+  user: User
+  onOpen: (id: number) => void
 }
 
 function MyParticipations({ user, onOpen }: Props) {
-    const [events, setEvents] = useState<EventSummary[]>([])
-    const [error, setError] = useState<string | null>(null)
+  const [events, setEvents] = useState<EventSummary[]>([])
+  const [error, setError] = useState<string | null>(null)
+  const [loaded, setLoaded] = useState(false)
 
-    useEffect(() => {
-        api<EventSummary[]>(user, '/api/events/participations/mine')
-            .then(setEvents)
-            .catch((e) => setError(e.message))
-    }, [user])
+  useEffect(() => {
+    api<EventSummary[]>(user, '/api/events/participations/mine')
+      .then(setEvents)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoaded(true))
+  }, [user])
 
-    return (
-        <div>
-            <h2>Wydarzenia, w których biorę udział</h2>
+  return (
+    <div>
+      <h2 className="text-4xl font-semibold">Biorę udział</h2>
+      <p className="mt-2 text-muted">Wydarzenia, na które się zapisałeś.</p>
 
-            {error && <p style={{ color: 'crimson' }}>{error}</p>}
-            {!error && events.length === 0 && (
-                <p>Nie zadeklarowałeś jeszcze udziału w żadnym wydarzeniu.</p>
-            )}
+      {error && <p className="mt-6 text-red-600">{error}</p>}
 
-            {events.map((e) => (
-                <div
-                    key={e.id}
-                    style={{ border: '1px solid #ccc', borderRadius: 8, padding: 16, marginBottom: 12 }}
-                >
-                    <h3 style={{ margin: 0 }}>{e.title}</h3>
-                    <p>{e.city}, {e.voivodeship}</p>
-                    <p>{new Date(e.startDate).toLocaleString('pl-PL')}</p>
-                    <button onClick={() => onOpen(e.id)}>Szczegóły</button>
-                </div>
-            ))}
+      {loaded && !error && events.length === 0 && (
+        <div className="mt-8 rounded-3xl border border-dashed border-line px-6 py-16 text-center">
+          <p className="font-serif text-2xl">Jeszcze nic tu nie ma</p>
+          <p className="mt-2 text-muted">
+            Wejdź w szczegóły dowolnego wydarzenia i kliknij „Biorę udział”.
+          </p>
         </div>
-    )
+      )}
+
+      <div className="mt-8 grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+        {events.map((e, i) => (
+          <EventCard key={e.id} event={e} index={i} onOpen={onOpen} />
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export default MyParticipations

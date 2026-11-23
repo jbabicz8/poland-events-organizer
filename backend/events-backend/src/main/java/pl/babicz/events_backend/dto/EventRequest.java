@@ -1,11 +1,6 @@
 package pl.babicz.events_backend.dto;
 
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -19,6 +14,9 @@ public record EventRequest(
         @Size(max = 255) String address,
         @NotNull Long voivodeshipId,
         @NotEmpty Set<Long> categoryIds,
-        @Positive @Max(100000) Integer capacity
+        @Positive @Max(100000) Integer capacity,
+        @Size(max = 500)
+        @Pattern(regexp = "^https?://\\S+$", message = "Link musi zaczynać się od http:// lub https://")
+        String websiteUrl
 ) {
 }

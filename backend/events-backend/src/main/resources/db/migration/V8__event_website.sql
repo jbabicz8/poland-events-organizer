@@ -1,0 +1,1 @@
+ALTER TABLE event ADD COLUMN website_url VARCHAR(500);

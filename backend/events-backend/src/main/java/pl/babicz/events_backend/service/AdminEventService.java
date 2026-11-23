@@ -141,7 +141,8 @@ public class AdminEventService {
                 e.getCreatedAt(),
                 e.getCapacity(),
                 e.getParticipantCount(),
-                eventService.toImageDtos(e)
+                eventService.toImageDtos(e),
+                e.getWebsiteUrl()
         );
     }
 }
