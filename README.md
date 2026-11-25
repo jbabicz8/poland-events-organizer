@@ -2,7 +2,7 @@
 
 Aplikacja webowa stworzona w ramach pracy inżynierskiej. Organizatorzy dodają wydarzenia, administrator je moderuje (akceptuje lub odrzuca z podaniem powodu), a użytkownicy wyszukują wydarzenia na liście lub na interaktywnej mapie Polski i zapisują się na nie.
 
-> **Uwaga:** hasła i klucze w tym repozytorium (`docker-compose.yaml`, `application.properties`) to wartości **tylko do uruchomienia lokalnego**. Przy jakimkolwiek prawdziwym wdrożeniu trzeba je zmienić (patrz sekcja *Konfiguracja*).
+> **Uwaga:** hasła i klucze w tym repozytorium (`docker-compose.yaml`, `application.properties`) to wartości **tylko do uruchomienia lokalnego**.
 
 ## Najważniejsze funkcje
 
@@ -112,20 +112,9 @@ npm run build
 .
 ├── backend/events-backend/   # Spring Boot (API, bezpieczeństwo, migracje Flyway, testy)
 ├── frontend/                 # React + TypeScript (Vite, Tailwind)
-├── docs/                     # dokumentacja
 ├── docker-compose.yaml       # baza + poczta + backend + frontend
 └── README.md
 ```
-
-## Znane ograniczenia
-
-Projekt jest pracą inżynierską i prototypem, nie gotowym produktem produkcyjnym:
-
-- brak ograniczenia liczby prób logowania,
-- token JWT przechowywany w `localStorage` przeglądarki,
-- brak potwierdzania adresu e-mail przy rejestracji,
-- poczta działa tylko lokalnie (Mailpit – maile nie wychodzą na zewnątrz),
-- zdjęcia zapisywane na dysku serwera (wolumen Dockera), bez zewnętrznego magazynu plików.
 
 ## Autor
 
